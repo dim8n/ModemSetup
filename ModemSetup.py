@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
-                             QPushButton, QTextEdit, QLineEdit, QLabel, QWidget, QGroupBox)
+                             QPushButton, QTextEdit, QLineEdit, QLabel, QWidget)
 from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt5.QtCore import QIODevice
 from PyQt5.QtGui import QFont
