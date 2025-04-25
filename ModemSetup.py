@@ -8,7 +8,7 @@ from PyQt5.QtGui import QFont
 class ATCommandSender(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AT Command Sender")
+        self.setWindowTitle("Modem Setup")
         self.setGeometry(100, 100, 600, 700)
         
         # Serial port setup
