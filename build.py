@@ -4,7 +4,7 @@ import os
 from generate_verfile import generate_ver_file
 
 def build():
-    # Генерируем .rc файл
+    # Генерируем version_info.txt файл
     ver_file = generate_ver_file("version.txt", "version_info.txt.template", "version_info.txt")
     
     user_dir = os.getenv('USERPROFILE')
