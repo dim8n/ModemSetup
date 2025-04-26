@@ -5,6 +5,10 @@ from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt5.QtCore import QIODevice
 from PyQt5.QtGui import QFont
 
+from version import __version__
+
+print(f"My App Version: {__version__}")
+
 class ATCommandSender(QMainWindow):
     def __init__(self):
         super().__init__()
