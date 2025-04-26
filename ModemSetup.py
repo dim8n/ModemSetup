@@ -9,7 +9,7 @@ class ATCommandSender(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Modem Setup")
-        self.setGeometry(100, 100, 600, 700)
+        self.setGeometry(100, 100, 800, 700)
         
         # Serial port setup
         self.serial = QSerialPort()
