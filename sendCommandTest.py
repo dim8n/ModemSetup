@@ -12,8 +12,8 @@ class ATCommandSender:
         self.at_command = tk.StringVar()
         self.serial_connection = None
         self.is_connected = tk.BooleanVar(value=False)
-        self.baudrate = 115200 # Фиксированное значение скорости
-        self.timeout = 1.0 # Фиксированное значение тайм-аута
+        self.baudrate = 115200
+        self.timeout = 1.0
 
         self.create_widgets()
         self.update_com_ports()
@@ -25,19 +25,18 @@ class ATCommandSender:
         self.port_combo.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.port_combo.bind("<<ComboboxSelected>>", self.on_port_selected)
         ttk.Button(self.master, text="Обновить порты", command=self.update_com_ports).grid(row=0, column=2, padx=5, pady=5)
-
         # Кнопка подключения/отключения
         self.connect_button = ttk.Button(self.master, text="Подключиться", command=self.toggle_connection)
-        self.connect_button.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
+        self.connect_button.grid(row=0, column=3, padx=5, pady=5) # Размещаем справа
 
         # Ввод AT-команды
-        ttk.Label(self.master, text="AT команда:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(self.master, text="AT команда:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
         at_command_entry = ttk.Entry(self.master, textvariable=self.at_command)
-        at_command_entry.grid(row=2, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+        at_command_entry.grid(row=1, column=1, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Кнопки предустановленных команд
         button_frame = ttk.Frame(self.master)
-        button_frame.grid(row=3, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        button_frame.grid(row=2, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
         self.button1 = ttk.Button(button_frame, text="ATI", command=self.send_command_1)
         self.button1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
         self.button2 = ttk.Button(button_frame, text="2", command=self.send_command_2)
@@ -51,22 +50,23 @@ class ATCommandSender:
 
         # Кнопка отправки произвольной команды
         self.send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
-        self.send_button.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
+        self.send_button.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
 
         # Область для отображения ответа
         self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10)
-        self.response_text_area.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
+        self.response_text_area.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="nsew")
         self.response_text_area.config(state=tk.DISABLED) # Сделаем поле только для чтения
 
         # Кнопка очистки вывода
         clear_button = ttk.Button(self.master, text="Очистить вывод", command=self.clear_output)
-        clear_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        clear_button.grid(row=5, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
 
         # Конфигурация сетки для растягивания элементов
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
-        self.master.grid_columnconfigure(2, weight=1)
-        self.master.grid_rowconfigure(5, weight=1)
+        self.master.grid_columnconfigure(2, weight=0)
+        self.master.grid_columnconfigure(3, weight=0)
+        self.master.grid_rowconfigure(4, weight=1)
 
         # Изначально делаем кнопки команд и "Отправить" неактивными
         self.disable_command_buttons()
@@ -128,8 +128,8 @@ class ATCommandSender:
 
     def connect_port(self):
         selected_port = self.port.get()
-        baud = self.baudrate # Используем фиксированное значение
-        time = self.timeout # Используем фиксированное значение
+        baud = self.baudrate
+        time = self.timeout
         if not selected_port:
             messagebox.showerror("Ошибка", "Пожалуйста, выберите COM порт.")
             return
@@ -201,38 +201,3 @@ class ATCommandSender:
             return
         command = "" # Добавьте свою команду здесь
         self._send_command(command)
-
-    def send_command_5(self):
-        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
-            messagebox.showerror("Ошибка", "Порт не подключен.")
-            return
-        command = "" # Добавьте свою команду здесь
-        self._send_command(command)
-
-    def _send_command(self, command):
-        if self.serial_connection and self.serial_connection.is_open:
-            try:
-                self.serial_connection.write(f"{command}\r\n".encode())
-                response = self.serial_connection.read(1024).decode(errors='ignore').strip()
-                self.display_response(response)
-            except serial.SerialException as e:
-                messagebox.showerror("Ошибка записи/чтения", f"Ошибка при отправке/получении данных: {e}")
-                self.disconnect_port()
-        else:
-            messagebox.showerror("Ошибка", "Порт не подключен.")
-
-    def display_response(self, response):
-        self.response_text_area.config(state=tk.NORMAL)
-        self.response_text_area.insert(tk.END, response + "\n")
-        self.response_text_area.config(state=tk.DISABLED)
-        self.response_text_area.see(tk.END)
-
-    def clear_output(self):
-        self.response_text_area.config(state=tk.NORMAL)
-        self.response_text_area.delete("1.0", tk.END)
-        self.response_text_area.config(state=tk.DISABLED)
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = ATCommandSender(root)
-    root.mainloop()
