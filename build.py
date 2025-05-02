@@ -17,6 +17,7 @@ def build():
         "--strip",
         f"--upx-dir={user_dir}\\Documents\\develop\\upx",
         f"--version-file={ver_file}",
+        "--icon=modemsetup.ico",
         "ModemSetup.py"
     ])
 
