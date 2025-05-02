@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import serial
 import serial.tools.list_ports
+import threading
+import time
 
 class ATCommandSender:
     def __init__(self, master):
@@ -14,6 +16,8 @@ class ATCommandSender:
         self.is_connected = tk.BooleanVar(value=False)
         self.baudrate = 115200
         self.timeout = 1.0
+        self.receive_thread = None
+        self.stop_reading = threading.Event()
 
         self.create_widgets()
         self.update_com_ports()
@@ -140,6 +144,7 @@ class ATCommandSender:
             self.is_connected.set(True)
             self.enable_command_buttons()
             self.display_system_message(f"Успешно подключено к {selected_port} на скорости {baud} бод")
+            self.start_receive_thread() # Запускаем поток для чтения данных
         except serial.SerialException as e:
             messagebox.showerror("Ошибка подключения", f"Не удалось подключиться к {selected_port}: {e}")
             self.serial_connection = None
@@ -147,20 +152,56 @@ class ATCommandSender:
             self.disable_command_buttons()
 
     def disconnect_port(self):
-        if self.serial_connection and self.serial_connection.is_open:
-            try:
-                self.serial_connection.close()
-                self.serial_connection = None
+        if self.is_connected.get():
+            self.stop_receive_thread() # Останавливаем поток чтения
+            if self.serial_connection and self.serial_connection.is_open:
+                try:
+                    self.serial_connection.close()
+                    self.serial_connection = None
+                    self.connect_button.config(text="Подключиться", command=self.toggle_connection)
+                    self.is_connected.set(False)
+                    self.disable_command_buttons()
+                    self.display_system_message(f"Успешно отключено от {self.port.get()}")
+                except Exception as e:
+                    messagebox.showerror("Ошибка отключения", f"Ошибка при отключении от порта: {e}")
+            else:
                 self.connect_button.config(text="Подключиться", command=self.toggle_connection)
                 self.is_connected.set(False)
                 self.disable_command_buttons()
-                self.display_system_message(f"Успешно отключено от {self.port.get()}")
-            except Exception as e:
-                messagebox.showerror("Ошибка отключения", f"Ошибка при отключении от порта: {e}")
-        else:
-            self.connect_button.config(text="Подключиться", command=self.toggle_connection)
-            self.is_connected.set(False)
-            self.disable_command_buttons()
+
+    def start_receive_thread(self):
+        self.stop_reading.clear()
+        self.receive_thread = threading.Thread(target=self.read_serial_data, daemon=True)
+        self.receive_thread.start()
+
+    def stop_receive_thread(self):
+        self.stop_reading.set()
+        if self.receive_thread and self.receive_thread.is_alive():
+            self.receive_thread.join(timeout=1.0) # Даем потоку время на завершение
+
+    def read_serial_data(self):
+        if self.serial_connection:
+            while not self.stop_reading.is_set() and self.serial_connection.is_open:
+                try:
+                    if self.serial_connection.in_waiting > 0:
+                        data = self.serial_connection.read(self.serial_connection.in_waiting)
+                        decoded_data = data.decode(errors='ignore')
+                        self.display_received_data(decoded_data)
+                    time.sleep(0.1) # Небольшая задержка, чтобы не загружать процессор
+                except serial.SerialException as e:
+                    self.display_system_message(f"Ошибка при чтении данных с порта: {e}")
+                    self.disconnect_port()
+                    break
+                except Exception as e:
+                    self.display_system_message(f"Неожиданная ошибка в потоке чтения: {e}")
+                    self.disconnect_port()
+                    break
+
+    def display_received_data(self, data):
+        self.response_text_area.config(state=tk.NORMAL)
+        self.response_text_area.insert(tk.END, f"[Получено]: {data}")
+        self.response_text_area.config(state=tk.DISABLED)
+        self.response_text_area.see(tk.END)
 
     def send_at_command(self):
         if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
@@ -223,7 +264,7 @@ class ATCommandSender:
 
     def display_response(self, response):
         self.response_text_area.config(state=tk.NORMAL)
-        self.response_text_area.insert(tk.END, response + "\n")
+        self.response_text_area.insert(tk.END, f"[Ответ]: {response}\n")
         self.response_text_area.config(state=tk.DISABLED)
         self.response_text_area.see(tk.END)
 
