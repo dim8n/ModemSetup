@@ -278,5 +278,6 @@ class ATCommandSender:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.geometry("800x600")
     app = ATCommandSender(root)
     root.mainloop()
