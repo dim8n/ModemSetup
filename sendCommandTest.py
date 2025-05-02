@@ -12,6 +12,8 @@ class ATCommandSender:
         self.baudrate = tk.IntVar(value=115200)
         self.timeout = tk.DoubleVar(value=1.0)
         self.at_command = tk.StringVar()
+        self.serial_connection = None  # Для хранения объекта serial.Serial
+        self.is_connected = tk.BooleanVar(value=False) # Состояние подключения
 
         self.create_widgets()
         self.update_com_ports()
@@ -21,7 +23,7 @@ class ATCommandSender:
         ttk.Label(self.master, text="COM порт:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.port_combo = ttk.Combobox(self.master, textvariable=self.port)
         self.port_combo.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        self.port_combo.bind("<<ComboboxSelected>>", self.on_port_selected) # Добавим обработчик выбора
+        self.port_combo.bind("<<ComboboxSelected>>", self.on_port_selected)
         ttk.Button(self.master, text="Обновить порты", command=self.update_com_ports).grid(row=0, column=2, padx=5, pady=5)
 
         # Скорость передачи (baudrate)
@@ -34,14 +36,18 @@ class ATCommandSender:
         timeout_entry = ttk.Entry(self.master, textvariable=self.timeout)
         timeout_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
+        # Кнопка подключения/отключения
+        self.connect_button = ttk.Button(self.master, text="Подключиться", command=self.toggle_connection)
+        self.connect_button.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
+
         # Ввод AT-команды
-        ttk.Label(self.master, text="AT команда:").grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(self.master, text="AT команда:").grid(row=4, column=0, padx=5, pady=5, sticky="w")
         at_command_entry = ttk.Entry(self.master, textvariable=self.at_command)
-        at_command_entry.grid(row=3, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+        at_command_entry.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
 
         # Кнопки предустановленных команд
         button_frame = ttk.Frame(self.master)
-        button_frame.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        button_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
         self.button1 = ttk.Button(button_frame, text="ATI", command=self.send_command_1).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
         self.button2 = ttk.Button(button_frame, text="2", command=self.send_command_2).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
         self.button3 = ttk.Button(button_frame, text="3", command=self.send_command_3).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
@@ -50,22 +56,22 @@ class ATCommandSender:
 
         # Кнопка отправки произвольной команды
         send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
-        send_button.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
+        send_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
 
         # Область для отображения ответа
         self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10)
-        self.response_text_area.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
+        self.response_text_area.grid(row=7, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
         self.response_text_area.config(state=tk.DISABLED) # Сделаем поле только для чтения
 
         # Кнопка очистки вывода
         clear_button = ttk.Button(self.master, text="Очистить вывод", command=self.clear_output)
-        clear_button.grid(row=7, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        clear_button.grid(row=8, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Конфигурация сетки для растягивания элементов
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
         self.master.grid_columnconfigure(2, weight=1)
-        self.master.grid_rowconfigure(6, weight=1)
+        self.master.grid_rowconfigure(7, weight=1)
 
     def update_com_ports(self):
         ports = serial.tools.list_ports.comports()
@@ -75,54 +81,32 @@ class ATCommandSender:
         if any(default_port in name for name in port_names):
             self.port.set(default_port)
         elif ports:
-            # По умолчанию устанавливаем только имя устройства
             self.port.set(ports[0].device)
         else:
             self.port.set("")
+        # При обновлении портов отключаемся, если были подключены
+        if self.is_connected.get():
+            self.disconnect_port()
+            self.connect_button.config(text="Подключиться", command=self.toggle_connection)
+            self.is_connected.set(False)
 
     def on_port_selected(self, event):
         selected_item = self.port_combo.get()
-        # Извлекаем только имя устройства (до первой скобки)
         port_name = selected_item.split(' ')[0]
         self.port.set(port_name)
+        # При смене порта отключаемся
+        if self.is_connected.get():
+            self.disconnect_port()
+            self.connect_button.config(text="Подключиться", command=self.toggle_connection)
+            self.is_connected.set(False)
 
-    def send_at_command(self):
-        selected_port = self.port.get()
-        baud = self.baudrate.get()
-        time = self.timeout.get()
-        command = self.at_command.get()
+    def toggle_connection(self):
+        if self.is_connected.get():
+            self.disconnect_port()
+        else:
+            self.connect_port()
 
-        if not selected_port:
-            messagebox.showerror("Ошибка", "Пожалуйста, выберите COM порт.")
-            return
-
-        if not command:
-            messagebox.showerror("Ошибка", "Пожалуйста, введите AT команду.")
-            return
-
-        self._send_command(command)
-
-    def send_command_1(self):
-        command = "ATI"  # Команда для первой кнопки
-        self._send_command(command)
-
-    def send_command_2(self):
-        command = "" # Добавьте свою команду здесь
-        self._send_command(command)
-
-    def send_command_3(self):
-        command = "" # Добавьте свою команду здесь
-        self._send_command(command)
-
-    def send_command_4(self):
-        command = "" # Добавьте свою команду здесь
-        self._send_command(command)
-
-    def send_command_5(self):
-        command = "" # Добавьте свою команду здесь
-        self._send_command(command)
-
-    def _send_command(self, command):
+    def connect_port(self):
         selected_port = self.port.get()
         baud = self.baudrate.get()
         time = self.timeout.get()
@@ -132,21 +116,93 @@ class ATCommandSender:
             return
 
         try:
-            ser = serial.Serial(selected_port, baud, timeout=time)
-            ser.write(f"{command}\r\n".encode())  # Добавляем \r\n и кодируем в байты
-            response = ser.read(1024).decode(errors='ignore').strip() # Читаем ответ и декодируем
-            ser.close()
-            self.display_response(response)
+            self.serial_connection = serial.Serial(selected_port, baud, timeout=time)
+            self.connect_button.config(text="Отключиться", command=self.toggle_connection)
+            self.is_connected.set(True)
+            messagebox.showinfo("Подключение", f"Успешно подключено к {selected_port}")
         except serial.SerialException as e:
-            messagebox.showerror("Ошибка порта", f"Ошибка при работе с портом {selected_port}: {e}")
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
+            messagebox.showerror("Ошибка подключения", f"Не удалось подключиться к {selected_port}: {e}")
+            self.serial_connection = None
+            self.is_connected.set(False)
+
+    def disconnect_port(self):
+        if self.serial_connection and self.serial_connection.is_open:
+            try:
+                self.serial_connection.close()
+                self.serial_connection = None
+                self.connect_button.config(text="Подключиться", command=self.toggle_connection)
+                self.is_connected.set(False)
+                messagebox.showinfo("Отключение", f"Успешно отключено от {self.port.get()}")
+            except Exception as e:
+                messagebox.showerror("Ошибка отключения", f"Ошибка при отключении от порта: {e}")
+        else:
+            self.connect_button.config(text="Подключиться", command=self.toggle_connection)
+            self.is_connected.set(False)
+
+    def send_at_command(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+
+        command = self.at_command.get()
+        if not command:
+            messagebox.showerror("Ошибка", "Пожалуйста, введите AT команду.")
+            return
+
+        self._send_command(command)
+
+    def send_command_1(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+        command = "ATI"
+        self._send_command(command)
+
+    def send_command_2(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+        command = "" # Добавьте свою команду здесь
+        self._send_command(command)
+
+    def send_command_3(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+        command = "" # Добавьте свою команду здесь
+        self._send_command(command)
+
+    def send_command_4(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+        command = "" # Добавьте свою команду здесь
+        self._send_command(command)
+
+    def send_command_5(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+        command = "" # Добавьте свою команду здесь
+        self._send_command(command)
+
+    def _send_command(self, command):
+        if self.serial_connection and self.serial_connection.is_open:
+            try:
+                self.serial_connection.write(f"{command}\r\n".encode())
+                response = self.serial_connection.read(1024).decode(errors='ignore').strip()
+                self.display_response(response)
+            except serial.SerialException as e:
+                messagebox.showerror("Ошибка записи/чтения", f"Ошибка при отправке/получении данных: {e}")
+                self.disconnect_port()
+        else:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
 
     def display_response(self, response):
-        self.response_text_area.config(state=tk.NORMAL) # Включаем редактирование
+        self.response_text_area.config(state=tk.NORMAL)
         self.response_text_area.insert(tk.END, response + "\n")
-        self.response_text_area.config(state=tk.DISABLED) # Снова делаем только для чтения
-        self.response_text_area.see(tk.END) # Прокручиваем вниз
+        self.response_text_area.config(state=tk.DISABLED)
+        self.response_text_area.see(tk.END)
 
     def clear_output(self):
         self.response_text_area.config(state=tk.NORMAL)
