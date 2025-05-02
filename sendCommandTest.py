@@ -4,6 +4,7 @@ import serial
 import serial.tools.list_ports
 import threading
 import time
+import tkinter.font as tkFont
 
 class ATCommandSender:
     def __init__(self, master):
@@ -23,6 +24,8 @@ class ATCommandSender:
         self.update_com_ports()
 
     def create_widgets(self):
+        output_font = tkFont.Font(family="Hack", size=8)
+
         # Выбор COM-порта
         ttk.Label(self.master, text="COM порт:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.port_combo = ttk.Combobox(self.master, textvariable=self.port)
@@ -57,7 +60,7 @@ class ATCommandSender:
         self.send_button.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
 
         # Область для отображения ответа
-        self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10)
+        self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10, font=output_font)
         self.response_text_area.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="nsew")
         self.response_text_area.config(state=tk.DISABLED) # Сделаем поле только для чтения
 
