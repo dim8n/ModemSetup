@@ -39,7 +39,11 @@ class ATCommandSender:
         # Ввод AT-команды
         ttk.Label(self.master, text="AT команда:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
         at_command_entry = ttk.Entry(self.master, textvariable=self.at_command)
-        at_command_entry.grid(row=1, column=1, columnspan=3, padx=5, pady=5, sticky="ew")
+        at_command_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+
+        # Кнопка отправки произвольной команды (перемещена)
+        self.send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
+        self.send_button.grid(row=1, column=2, padx=5, pady=5)
 
         # Кнопки предустановленных команд
         button_frame = ttk.Frame(self.master)
@@ -55,25 +59,21 @@ class ATCommandSender:
         self.button5 = ttk.Button(button_frame, text="5", command=self.send_command_5)
         self.button5.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
 
-        # Кнопка отправки произвольной команды
-        self.send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
-        self.send_button.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
-
         # Область для отображения ответа
         self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10, font=output_font)
-        self.response_text_area.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="nsew")
+        self.response_text_area.grid(row=3, column=0, columnspan=4, padx=5, pady=5, sticky="nsew")
         self.response_text_area.config(state=tk.DISABLED) # Сделаем поле только для чтения
 
         # Кнопка очистки вывода
         clear_button = ttk.Button(self.master, text="Очистить вывод", command=self.clear_output)
-        clear_button.grid(row=5, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
+        clear_button.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
 
         # Конфигурация сетки для растягивания элементов
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
         self.master.grid_columnconfigure(2, weight=0)
         self.master.grid_columnconfigure(3, weight=0)
-        self.master.grid_rowconfigure(4, weight=1)
+        self.master.grid_rowconfigure(3, weight=1) # Обновляем индекс строки для response_text_area
 
         # Изначально делаем кнопки команд и "Отправить" неактивными
         self.disable_command_buttons()
