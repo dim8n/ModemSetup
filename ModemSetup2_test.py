@@ -27,11 +27,17 @@ class ATCommandSender:
 
         self.port_combo = ttk.Combobox(port_frame)
         ports = serial.tools.list_ports.comports()
-        port_list = [f"{port.device} - {port.description or 'Unknown'}" for port in ports]
-        self.port_combo['values'] = port_list
-        self.port_combo.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
-        if port_list:
-            self.port_combo.set(port_list[0].split(' - ')[0])  # Set default to the first available port
+        port_list_with_descriptions = [f"{port.device} - {port.description or 'Unknown'}" for port in ports]
+        self.port_combo['values'] = port_list_with_descriptions
+
+        default_port = "COM13"
+        found_default = False
+        port_names = [port.device for port in ports]
+        if default_port in port_names:
+            self.port_combo.set(default_port)
+            found_default = True
+        elif port_list_with_descriptions:
+            self.port_combo.set(port_list_with_descriptions[0].split(' - ')[0])  # Set default to the first available port
 
         self.connect_btn = ttk.Button(port_frame, text="Connect", command=self.toggle_connection)
         self.connect_btn.grid(row=0, column=2, padx=5, pady=5)
