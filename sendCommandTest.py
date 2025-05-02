@@ -201,3 +201,38 @@ class ATCommandSender:
             return
         command = "" # Добавьте свою команду здесь
         self._send_command(command)
+
+    def send_command_5(self):
+        if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+            return
+        command = "" # Добавьте свою команду здесь
+        self._send_command(command)
+
+    def _send_command(self, command):
+        if self.serial_connection and self.serial_connection.is_open:
+            try:
+                self.serial_connection.write(f"{command}\r\n".encode())
+                response = self.serial_connection.read(1024).decode(errors='ignore').strip()
+                self.display_response(response)
+            except serial.SerialException as e:
+                messagebox.showerror("Ошибка записи/чтения", f"Ошибка при отправке/получении данных: {e}")
+                self.disconnect_port()
+        else:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+
+    def display_response(self, response):
+        self.response_text_area.config(state=tk.NORMAL)
+        self.response_text_area.insert(tk.END, response + "\n")
+        self.response_text_area.config(state=tk.DISABLED)
+        self.response_text_area.see(tk.END)
+
+    def clear_output(self):
+        self.response_text_area.config(state=tk.NORMAL)
+        self.response_text_area.delete("1.0", tk.END)
+        self.response_text_area.config(state=tk.DISABLED)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ATCommandSender(root)
+    root.mainloop()
