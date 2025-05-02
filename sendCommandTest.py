@@ -12,8 +12,8 @@ class ATCommandSender:
         self.baudrate = tk.IntVar(value=115200)
         self.timeout = tk.DoubleVar(value=1.0)
         self.at_command = tk.StringVar()
-        self.serial_connection = None  # Для хранения объекта serial.Serial
-        self.is_connected = tk.BooleanVar(value=False) # Состояние подключения
+        self.serial_connection = None
+        self.is_connected = tk.BooleanVar(value=False)
 
         self.create_widgets()
         self.update_com_ports()
@@ -48,15 +48,20 @@ class ATCommandSender:
         # Кнопки предустановленных команд
         button_frame = ttk.Frame(self.master)
         button_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
-        self.button1 = ttk.Button(button_frame, text="ATI", command=self.send_command_1).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
-        self.button2 = ttk.Button(button_frame, text="2", command=self.send_command_2).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
-        self.button3 = ttk.Button(button_frame, text="3", command=self.send_command_3).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
-        self.button4 = ttk.Button(button_frame, text="4", command=self.send_command_4).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
-        self.button5 = ttk.Button(button_frame, text="5", command=self.send_command_5).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        self.button1 = ttk.Button(button_frame, text="ATI", command=self.send_command_1)
+        self.button1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        self.button2 = ttk.Button(button_frame, text="2", command=self.send_command_2)
+        self.button2.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        self.button3 = ttk.Button(button_frame, text="3", command=self.send_command_3)
+        self.button3.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        self.button4 = ttk.Button(button_frame, text="4", command=self.send_command_4)
+        self.button4.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        self.button5 = ttk.Button(button_frame, text="5", command=self.send_command_5)
+        self.button5.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
 
         # Кнопка отправки произвольной команды
-        send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
-        send_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
+        self.send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
+        self.send_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
 
         # Область для отображения ответа
         self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10)
@@ -73,6 +78,25 @@ class ATCommandSender:
         self.master.grid_columnconfigure(2, weight=1)
         self.master.grid_rowconfigure(7, weight=1)
 
+        # Изначально делаем кнопки команд и "Отправить" неактивными
+        self.disable_command_buttons()
+
+    def disable_command_buttons(self):
+        self.button1.config(state='disabled')
+        self.button2.config(state='disabled')
+        self.button3.config(state='disabled')
+        self.button4.config(state='disabled')
+        self.button5.config(state='disabled')
+        self.send_button.config(state='disabled')
+
+    def enable_command_buttons(self):
+        self.button1.config(state='normal')
+        self.button2.config(state='normal')
+        self.button3.config(state='normal')
+        self.button4.config(state='normal')
+        self.button5.config(state='normal')
+        self.send_button.config(state='normal')
+
     def update_com_ports(self):
         ports = serial.tools.list_ports.comports()
         port_names = [f"{port.device} ({port.description})" for port in ports]
@@ -84,21 +108,21 @@ class ATCommandSender:
             self.port.set(ports[0].device)
         else:
             self.port.set("")
-        # При обновлении портов отключаемся, если были подключены
         if self.is_connected.get():
             self.disconnect_port()
             self.connect_button.config(text="Подключиться", command=self.toggle_connection)
             self.is_connected.set(False)
+            self.disable_command_buttons()
 
     def on_port_selected(self, event):
         selected_item = self.port_combo.get()
         port_name = selected_item.split(' ')[0]
         self.port.set(port_name)
-        # При смене порта отключаемся
         if self.is_connected.get():
             self.disconnect_port()
             self.connect_button.config(text="Подключиться", command=self.toggle_connection)
             self.is_connected.set(False)
+            self.disable_command_buttons()
 
     def toggle_connection(self):
         if self.is_connected.get():
@@ -119,11 +143,13 @@ class ATCommandSender:
             self.serial_connection = serial.Serial(selected_port, baud, timeout=time)
             self.connect_button.config(text="Отключиться", command=self.toggle_connection)
             self.is_connected.set(True)
+            self.enable_command_buttons()
             messagebox.showinfo("Подключение", f"Успешно подключено к {selected_port}")
         except serial.SerialException as e:
             messagebox.showerror("Ошибка подключения", f"Не удалось подключиться к {selected_port}: {e}")
             self.serial_connection = None
             self.is_connected.set(False)
+            self.disable_command_buttons()
 
     def disconnect_port(self):
         if self.serial_connection and self.serial_connection.is_open:
@@ -132,12 +158,14 @@ class ATCommandSender:
                 self.serial_connection = None
                 self.connect_button.config(text="Подключиться", command=self.toggle_connection)
                 self.is_connected.set(False)
+                self.disable_command_buttons()
                 messagebox.showinfo("Отключение", f"Успешно отключено от {self.port.get()}")
             except Exception as e:
                 messagebox.showerror("Ошибка отключения", f"Ошибка при отключении от порта: {e}")
         else:
             self.connect_button.config(text="Подключиться", command=self.toggle_connection)
             self.is_connected.set(False)
+            self.disable_command_buttons()
 
     def send_at_command(self):
         if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
