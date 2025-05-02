@@ -7,7 +7,7 @@ from tkinter import font
 class ATCommandSender:
     def __init__(self, root):
         self.root = root
-        self.root.title("Modem Setup")
+        self.root.title("Modem Setup v.2")
         self.root.geometry("800x700+100+100")
 
         self.serial_port = None
