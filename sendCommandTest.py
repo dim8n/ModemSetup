@@ -27,9 +27,9 @@ class ATCommandSender:
         output_font = tkFont.Font(family="Hack", size=8)
 
         # Выбор COM-порта
-        ttk.Label(self.master, text="COM порт:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        #ttk.Label(self.master, text="COM порт:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.port_combo = ttk.Combobox(self.master, textvariable=self.port)
-        self.port_combo.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.port_combo.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
         self.port_combo.bind("<<ComboboxSelected>>", self.on_port_selected)
         ttk.Button(self.master, text="Обновить порты", command=self.update_com_ports).grid(row=0, column=2, padx=5, pady=5)
         # Кнопка подключения/отключения
@@ -37,13 +37,13 @@ class ATCommandSender:
         self.connect_button.grid(row=0, column=3, padx=5, pady=5) # Размещаем справа
 
         # Ввод AT-команды
-        ttk.Label(self.master, text="AT команда:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        #ttk.Label(self.master, text="AT команда:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
         at_command_entry = ttk.Entry(self.master, textvariable=self.at_command)
-        at_command_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        at_command_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
 
         # Кнопка отправки произвольной команды (перемещена)
         self.send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
-        self.send_button.grid(row=1, column=2, padx=5, pady=5)
+        self.send_button.grid(row=1, column=3, padx=5, pady=5)
 
         # Кнопки предустановленных команд
         button_frame = ttk.Frame(self.master)
