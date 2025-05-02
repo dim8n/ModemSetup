@@ -10,10 +10,10 @@ class ATCommandSender:
 
         self.port = tk.StringVar()
         self.baudrate = tk.IntVar(value=115200)
-        self.timeout = tk.DoubleVar(value=1.0)
         self.at_command = tk.StringVar()
         self.serial_connection = None
         self.is_connected = tk.BooleanVar(value=False)
+        self.timeout = 1.0 # Фиксированное значение тайм-аута
 
         self.create_widgets()
         self.update_com_ports()
@@ -31,23 +31,18 @@ class ATCommandSender:
         baudrate_entry = ttk.Entry(self.master, textvariable=self.baudrate)
         baudrate_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
-        # Тайм-аут
-        ttk.Label(self.master, text="Тайм-аут (сек):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        timeout_entry = ttk.Entry(self.master, textvariable=self.timeout)
-        timeout_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
-
         # Кнопка подключения/отключения
         self.connect_button = ttk.Button(self.master, text="Подключиться", command=self.toggle_connection)
-        self.connect_button.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
+        self.connect_button.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
 
         # Ввод AT-команды
-        ttk.Label(self.master, text="AT команда:").grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(self.master, text="AT команда:").grid(row=3, column=0, padx=5, pady=5, sticky="w")
         at_command_entry = ttk.Entry(self.master, textvariable=self.at_command)
-        at_command_entry.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+        at_command_entry.grid(row=3, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
 
         # Кнопки предустановленных команд
         button_frame = ttk.Frame(self.master)
-        button_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        button_frame.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
         self.button1 = ttk.Button(button_frame, text="ATI", command=self.send_command_1)
         self.button1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
         self.button2 = ttk.Button(button_frame, text="2", command=self.send_command_2)
@@ -61,22 +56,22 @@ class ATCommandSender:
 
         # Кнопка отправки произвольной команды
         self.send_button = ttk.Button(self.master, text="Отправить", command=self.send_at_command)
-        self.send_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
+        self.send_button.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
 
         # Область для отображения ответа
         self.response_text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, height=10)
-        self.response_text_area.grid(row=7, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
+        self.response_text_area.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
         self.response_text_area.config(state=tk.DISABLED) # Сделаем поле только для чтения
 
         # Кнопка очистки вывода
         clear_button = ttk.Button(self.master, text="Очистить вывод", command=self.clear_output)
-        clear_button.grid(row=8, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        clear_button.grid(row=7, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Конфигурация сетки для растягивания элементов
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
         self.master.grid_columnconfigure(2, weight=1)
-        self.master.grid_rowconfigure(7, weight=1)
+        self.master.grid_rowconfigure(6, weight=1)
 
         # Изначально делаем кнопки команд и "Отправить" неактивными
         self.disable_command_buttons()
@@ -139,8 +134,7 @@ class ATCommandSender:
     def connect_port(self):
         selected_port = self.port.get()
         baud = self.baudrate.get()
-        time = self.timeout.get()
-
+        time = self.timeout # Используем фиксированное значение
         if not selected_port:
             messagebox.showerror("Ошибка", "Пожалуйста, выберите COM порт.")
             return
@@ -150,7 +144,7 @@ class ATCommandSender:
             self.connect_button.config(text="Отключиться", command=self.toggle_connection)
             self.is_connected.set(True)
             self.enable_command_buttons()
-            self.display_system_message(f"Успешно подключено к {selected_port}") # Выводим сообщение в поле вывода
+            self.display_system_message(f"Успешно подключено к {selected_port}")
         except serial.SerialException as e:
             messagebox.showerror("Ошибка подключения", f"Не удалось подключиться к {selected_port}: {e}")
             self.serial_connection = None
@@ -165,7 +159,7 @@ class ATCommandSender:
                 self.connect_button.config(text="Подключиться", command=self.toggle_connection)
                 self.is_connected.set(False)
                 self.disable_command_buttons()
-                self.display_system_message(f"Успешно отключено от {self.port.get()}") # Выводим сообщение в поле вывода
+                self.display_system_message(f"Успешно отключено от {self.port.get()}")
             except Exception as e:
                 messagebox.showerror("Ошибка отключения", f"Ошибка при отключении от порта: {e}")
         else:
