@@ -97,6 +97,12 @@ class ATCommandSender:
         self.button5.config(state='normal')
         self.send_button.config(state='normal')
 
+    def display_system_message(self, message):
+        self.response_text_area.config(state=tk.NORMAL)
+        self.response_text_area.insert(tk.END, f"[Системное сообщение]: {message}\n")
+        self.response_text_area.config(state=tk.DISABLED)
+        self.response_text_area.see(tk.END)
+
     def update_com_ports(self):
         ports = serial.tools.list_ports.comports()
         port_names = [f"{port.device} ({port.description})" for port in ports]
@@ -144,7 +150,7 @@ class ATCommandSender:
             self.connect_button.config(text="Отключиться", command=self.toggle_connection)
             self.is_connected.set(True)
             self.enable_command_buttons()
-            messagebox.showinfo("Подключение", f"Успешно подключено к {selected_port}")
+            self.display_system_message(f"Успешно подключено к {selected_port}") # Выводим сообщение в поле вывода
         except serial.SerialException as e:
             messagebox.showerror("Ошибка подключения", f"Не удалось подключиться к {selected_port}: {e}")
             self.serial_connection = None
@@ -159,7 +165,7 @@ class ATCommandSender:
                 self.connect_button.config(text="Подключиться", command=self.toggle_connection)
                 self.is_connected.set(False)
                 self.disable_command_buttons()
-                messagebox.showinfo("Отключение", f"Успешно отключено от {self.port.get()}")
+                self.display_system_message(f"Успешно отключено от {self.port.get()}") # Выводим сообщение в поле вывода
             except Exception as e:
                 messagebox.showerror("Ошибка отключения", f"Ошибка при отключении от порта: {e}")
         else:
