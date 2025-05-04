@@ -19,15 +19,16 @@ class ATCommandSender:
         self.timeout = 1.0
         self.receive_thread = None
         self.stop_reading = threading.Event()
+        self.last_command_sent = tk.StringVar(value="Нет")
 
         self.create_widgets()
         self.update_com_ports()
+        self.update_status_bar() # Инициализируем строку состояния
 
     def create_widgets(self):
         output_font = tkFont.Font(family="Hack", size=8)
 
         # Выбор COM-порта
-        #ttk.Label(self.master, text="COM порт:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.port_combo = ttk.Combobox(self.master, textvariable=self.port)
         self.port_combo.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
         self.port_combo.bind("<<ComboboxSelected>>", self.on_port_selected)
@@ -37,7 +38,6 @@ class ATCommandSender:
         self.connect_button.grid(row=0, column=3, padx=5, pady=5) # Размещаем справа
 
         # Ввод AT-команды
-        #ttk.Label(self.master, text="AT команда:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
         at_command_entry = ttk.Entry(self.master, textvariable=self.at_command)
         at_command_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
 
@@ -68,15 +68,27 @@ class ATCommandSender:
         clear_button = ttk.Button(self.master, text="Очистить вывод", command=self.clear_output)
         clear_button.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
 
+        # Строка состояния
+        self.status_bar = ttk.Label(self.master, text="", relief=tk.SUNKEN, anchor=tk.W)
+        self.status_bar.grid(row=5, column=0, columnspan=4, sticky="ew", padx=5, pady=5)
+
         # Конфигурация сетки для растягивания элементов
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
         self.master.grid_columnconfigure(2, weight=0)
         self.master.grid_columnconfigure(3, weight=0)
-        self.master.grid_rowconfigure(3, weight=1) # Обновляем индекс строки для response_text_area
+        self.master.grid_rowconfigure(3, weight=1)
+        self.master.grid_rowconfigure(5, weight=0) # Фиксируем высоту строки состояния
 
         # Изначально делаем кнопки команд и "Отправить" неактивными
         self.disable_command_buttons()
+
+    def update_status_bar(self):
+        port_status = f"Порт: {self.port.get() if self.port.get() else 'Не выбран'}"
+        connection_status = f"Соединение: {'Подключено' if self.is_connected.get() else 'Отключено'}"
+        last_command = f"Последняя команда: {self.last_command_sent.get()}"
+        self.status_bar.config(text=f"{port_status} | {connection_status} | {last_command}")
+        self.master.after(100, self.update_status_bar) # Обновляем статус каждые 100 мс
 
     def disable_command_buttons(self):
         self.button1.config(state='disabled')
@@ -206,6 +218,20 @@ class ATCommandSender:
         self.response_text_area.config(state=tk.DISABLED)
         self.response_text_area.see(tk.END)
 
+    def _send_command(self, command):
+        if self.serial_connection and self.serial_connection.is_open:
+            try:
+                self.serial_connection.write(f"{command}\r\n".encode())
+                self.last_command_sent.set(command) # Обновляем последнюю отправленную команду
+                response = self.serial_connection.read(1024).decode(errors='ignore').strip()
+                self.display_response(response)
+            except serial.SerialException as e:
+                messagebox.showerror("Ошибка записи/чтения", f"Ошибка при отправке/получении данных: {e}")
+                self.disconnect_port()
+        else:
+            messagebox.showerror("Ошибка", "Порт не подключен.")
+        self.update_status_bar() # Обновляем строку состояния после отправки команды
+
     def send_at_command(self):
         if not self.is_connected.get() or not self.serial_connection or not self.serial_connection.is_open:
             messagebox.showerror("Ошибка", "Порт не подключен.")
@@ -252,18 +278,6 @@ class ATCommandSender:
             return
         command = "" # Добавьте свою команду здесь
         self._send_command(command)
-
-    def _send_command(self, command):
-        if self.serial_connection and self.serial_connection.is_open:
-            try:
-                self.serial_connection.write(f"{command}\r\n".encode())
-                response = self.serial_connection.read(1024).decode(errors='ignore').strip()
-                self.display_response(response)
-            except serial.SerialException as e:
-                messagebox.showerror("Ошибка записи/чтения", f"Ошибка при отправке/получении данных: {e}")
-                self.disconnect_port()
-        else:
-            messagebox.showerror("Ошибка", "Порт не подключен.")
 
     def display_response(self, response):
         self.response_text_area.config(state=tk.NORMAL)
