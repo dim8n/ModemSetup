@@ -69,6 +69,9 @@ class ATCommandSender:
         self.command5_btn = ttk.Button(btn_frame, text="AT!GSTATUS?", command=lambda: self.send_command("AT!GSTATUS?"))
         self.command5_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
+        self.command6_btn = ttk.Button(btn_frame, text="ATI", command=lambda: self.send_command("ATI"))
+        self.command6_btn.pack(side=tk.LEFT, padx=5, pady=5)
+
         # Custom command
         custom_frame = ttk.LabelFrame(main_frame, text="Custom Command", padding=5)
         custom_frame.pack(fill=tk.X, pady=5)
@@ -110,6 +113,7 @@ class ATCommandSender:
         self.command3_btn.config(state=states)
         self.command4_btn.config(state=states)
         self.command5_btn.config(state=states)
+        self.command6_btn.config(state=states)
         self.send_custom_btn.config(state=states)
         self.custom_cmd_input.config(state=states)
 
