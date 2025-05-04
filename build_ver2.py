@@ -18,7 +18,7 @@ def build():
         f"--upx-dir={user_dir}\\Documents\\develop\\upx",
         f"--version-file={ver_file}",
         "--icon=modemsetup.ico",
-        "ModemSetup2_test.py"
+        "ModemSetup2.py"
     ])
 
 if __name__ == "__main__":
