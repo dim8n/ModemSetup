@@ -1,0 +1,46 @@
+name: Build and Release Windows App
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-windows-release:
+    runs-on: windows-latest # Используем последнюю версию Windows для сборки
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4 # Шаг 1: Клонируем ваш репозиторий
+
+    - name: Set up Python
+      uses: actions/setup-python@v5 # Шаг 2: Настраиваем окружение Python
+      with:
+        python-version: '3.10' # Или '3.11', '3.9' в зависимости от вашей версии Python
+
+    - name: Install dependencies
+      run: | # Шаг 3: Устанавливаем необходимые библиотеки
+        python -m pip install --upgrade pip
+        pip install pyinstaller # Инструмент для создания исполняемых файлов
+        pip install pyserial   # Для работы с COM-портами, используется в вашем приложении
+        # pip install pywin32  # Может потребоваться для некоторых специфических функций Windows
+                               # Если у вас возникнут проблемы, раскомментируйте эту строку
+
+    - name: Build with PyInstaller
+      run: | # Шаг 4: Запускаем PyInstaller для создания .exe файла
+        # --onefile: Создает один исполняемый файл
+        # --windowed: Предотвращает появление консольного окна при запуске GUI приложения
+        # --name ModemSetup2: Задает имя выходного .exe файла (ModemSetup2.exe)
+        # ModemSetup2.py: Имя вашего основного скрипта
+        pyinstaller --onefile --windowed --name ModemSetup2 ModemSetup2.py
+      # Optional: Add an icon if you have one. Uncomment and replace path.
+      # pyinstaller --onefile --windowed --name ModemSetup2 --icon=path/to/your/icon.ico ModemSetup2.py
+
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1 # Шаг 5: Создаем GitHub Release и прикрепляем к нему .exe
+      if: success() # Выполняется только если предыдущие шаги прошли успешно
+      with:
+        files: dist/ModemSetup2.exe # Указываем путь к созданному .exe файлу
+        # tag_name: ${{ github.ref }} # По умолчанию используется тег релиза, можно не указывать
+        # name: Release ${{ github.ref }} # Имя релиза, по умолчанию используется имя тега
+        # body_path: RELEASE_NOTES.md # Путь к файлу с описанием релиза, если есть
