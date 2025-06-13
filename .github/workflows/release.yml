@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+permissions:
+  contents: write # Предоставляет разрешение на запись в содержимое репозитория, что необходимо для создания релизов и загрузки файлов.
 
 jobs:
   build-windows-release:
