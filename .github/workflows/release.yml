@@ -34,7 +34,7 @@ jobs:
         # --windowed: Предотвращает появление консольного окна при запуске GUI приложения
         # --name ModemSetup2: Задает имя выходного .exe файла (ModemSetup2.exe)
         # ModemSetup2.py: Имя вашего основного скрипта
-        pyinstaller --onefile --windowed --name --icon=modemsetup.ico ModemSetup2 ModemSetup2.py
+        pyinstaller --onefile --windowed --icon=modemsetup.ico --name ModemSetup2 ModemSetup2.py
       # Optional: Add an icon if you have one. Uncomment and replace path.
       # pyinstaller --onefile --windowed --name ModemSetup2 --icon=path/to/your/icon.ico ModemSetup2.py
 
